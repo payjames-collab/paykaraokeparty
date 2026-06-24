@@ -31,6 +31,7 @@ export default function Home() {
 
   // Load guests
   async function loadGuests() {
+    if (!supabase) return;
     const { data } = await supabase.from("guests").select("*");
     if (data) setGuests(data as Guest[]);
   }
@@ -41,7 +42,7 @@ export default function Home() {
 
   // RSVP submit
   async function submitRSVP() {
-    if (!name || !date) return;
+    if (!name || !date || !supabase) return;
 
     await supabase.from("guests").insert({
       name,
@@ -62,6 +63,7 @@ export default function Home() {
 
   // Game vote
   async function voteGame(choice: string) {
+  if (!supabase) return;
   await supabase.from("game_votes").insert({
     name,
     game: choice,
