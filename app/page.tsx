@@ -62,13 +62,15 @@ export default function Home() {
 
   // Game vote
   async function voteGame(choice: string) {
-  await supabase.from("game_votes").insert({
-    name,
-    game: choice,
-  });
+    if (!supabase || !name) return;
 
-  setGameVote(choice);
-}
+    await supabase.from("game_votes").insert({
+      name,
+      game: choice,
+    });
+
+    setGameVote(choice);
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-purple-700 via-pink-500 to-orange-400 flex flex-col items-center p-6 text-white">
