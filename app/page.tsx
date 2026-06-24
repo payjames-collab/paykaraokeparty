@@ -1,65 +1,164 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
+import confetti from "canvas-confetti";
+
+type Guest = {
+  id?: number;
+  name: string;
+  selected_date: string;
+  plus_ones: number;
+};
 
 export default function Home() {
+  const [name, setName] = useState("");
+  const [date, setDate] = useState("");
+  const [plusOnes, setPlusOnes] = useState(0);
+
+  const [guests, setGuests] = useState<Guest[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+
+  const [gameVote, setGameVote] = useState("");
+
+  const games = [
+    "Mafia",
+    "Buzzed / First and Last",
+    "Random Notes",
+    "Pictionary",
+    "WII Games",
+  ];
+
+  // Load guests
+  async function loadGuests() {
+    const { data } = await supabase.from("guests").select("*");
+    if (data) setGuests(data as Guest[]);
+  }
+
+  useEffect(() => {
+    loadGuests();
+  }, []);
+
+  // RSVP submit
+  async function submitRSVP() {
+    if (!name || !date) return;
+
+    await supabase.from("guests").insert({
+      name,
+      selected_date: date,
+      plus_ones: plusOnes,
+      attending: "yes",
+    });
+
+    confetti({
+      particleCount: 120,
+      spread: 80,
+      origin: { y: 0.6 },
+    });
+
+    setSubmitted(true);
+    loadGuests();
+  }
+
+  // Game vote
+  async function voteGame(choice: string) {
+  await supabase.from("game_votes").insert({
+    name,
+    game: choice,
+  });
+
+  setGameVote(choice);
+}
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <main className="min-h-screen bg-gradient-to-br from-purple-700 via-pink-500 to-orange-400 flex flex-col items-center p-6 text-white">
+
+      {/* TITLE */}
+      <h1 className="text-4xl font-bold mt-10 text-center">
+        PAY IS STEALING THE COUSINS
+      </h1>
+
+      <p className="mt-3 text-center max-w-xl">
+        Karaoke. Drinks. Chaos. Bad singing strongly encouraged.
+      </p>
+
+      {/* LIVE GUEST LIST */}
+      <div className="mt-6 bg-black/30 p-4 rounded-xl w-full max-w-md">
+        <h2 className="font-bold mb-2">Live Guests</h2>
+
+        {guests.length === 0 ? (
+          <p>No RSVPs yet</p>
+        ) : (
+          guests.map((g) => (
+            <p key={g.id}>
+              {g.name} — {g.selected_date} (+{g.plus_ones})
+            </p>
+          ))
+        )}
+      </div>
+
+      {/* RSVP BOX */}
+      <div className="bg-purple-950 mt-6 w-full max-w-md p-6 rounded-3xl">
+
+        {!submitted ? (
+          <>
+            <input
+              className="w-full p-3 rounded bg-orange-300 text-black mb-3"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+            <select
+              className="w-full p-3 rounded bg-orange-300 text-black mb-3"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            >
+              <option value="">Select Date</option>
+              <option value="July 10">July 10</option>
+              <option value="July 17">July 17</option>
+              <option value="July 18">July 18</option>
+            </select>
+
+            <input
+              type="number"
+              className="w-full p-3 rounded bg-orange-300 text-black mb-3"
+              placeholder="Plus ones"
+              value={plusOnes}
+              onChange={(e) => setPlusOnes(Number(e.target.value))}
+            />
+
+            <button
+              className="w-full bg-purple-500 p-3 rounded font-bold"
+              onClick={submitRSVP}
+            >
+              Submit RSVP
+            </button>
+          </>
+        ) : (
+          <p className="text-center font-bold">You’re in</p>
+        )}
+      </div>
+
+      {/* GAME POLL */}
+      <div className="mt-6 w-full max-w-md bg-black/30 p-4 rounded-xl">
+        <h2 className="font-bold mb-2">Game Poll</h2>
+
+        {games.map((g) => (
+          <button
+            key={g}
+            className="block w-full bg-orange-400 text-black p-2 rounded mb-2 hover:bg-orange-300"
+            onClick={() => voteGame(g)}
           >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            {g}
+          </button>
+        ))}
+
+        {gameVote && (
+          <p className="mt-2 font-bold">You voted: {gameVote}</p>
+        )}
+      </div>
+
+    </main>
   );
 }
